@@ -1,0 +1,66 @@
+Gant:
+SQL
+
+/*
+	构建日期周期-
+	Create Date datafram,filtered by exit max date and min date;
+*/
+
+with k as (SELECT min(D1) as dstart,
+			case when max(D5) is null then 
+			(
+			case when max(D4) is null then 
+			
+			(
+			case when max(D3) is null then
+			max(D2) 
+			else max(D3) end
+			)
+			
+			else max(D4) end
+			
+			)
+			else max(D5) end as dend
+			
+			
+			from SCM_Doer_Progress),
+			
+/*笛卡尔乘积Cartesian*/			
+
+		m as (SELECT * from BG_Mll_D_DimDate,k WHERE prd_date>=k.dstart and prd_date<=k.dend)
+
+
+/*日期之外显示空，日期之间显示线，日期上显示点
+  Display blank pictures when beyound the dates,line pictures when between the dates,dot pictures on the dates；
+*/
+
+SELECT PO,m.years,m.yearmonths,m.days,m.prd_sdate,
+
+case when prd_date<D1 then ''
+     when prd_date>D1 and prd_date<D2 and D2>'' then 'http://221.133.242.162:18080/runsapic/pic/link.png'
+		 when prd_date>D2 and prd_date<D3 and D3>'' then 'http://221.133.242.162:18080/runsapic/pic/link.png'
+		 when prd_date>D3 and prd_date<D4 and D4>'' then 'http://221.133.242.162:18080/runsapic/pic/link.png'
+		 when prd_date>D4 and prd_date<D5 and D5>'' then 'http://221.133.242.162:18080/runsapic/pic/link.png'
+		 when prd_date=D1 then 'http://221.133.242.162:18080/runsapic/pic/dot1.png'
+		 when prd_date=D2 then 'http://221.133.242.162:18080/runsapic/pic/dot2.png'
+		 when prd_date=D3 and D3_Status=1 then 'http://221.133.242.162:18080/runsapic/pic/D3OK.png'
+		 when prd_date=D3 and D3_Status=0 then 'http://221.133.242.162:18080/runsapic/pic/D3-OK.png'
+		 when prd_date=D4 and D4_Status=1 then 'http://221.133.242.162:18080/runsapic/pic/dot3ok.png'
+		 when prd_date=D4 and D4_Status=0 then 'http://221.133.242.162:18080/runsapic/pic/dot3.png'
+		 when prd_date=D5 and D5_Status=1 then 'http://221.133.242.162:18080/runsapic/pic/D5OK.png'	 
+		 when prd_date=D5 and D5_Status=0 then 'http://221.133.242.162:18080/runsapic/pic/D5-OK.png'
+		 when prd_date>D5 then '' 	 
+		 
+		 else '' end as D,
+		 
+case when  SCM_Doer_Progress.D5_Status=1 then '整单完工' 
+	when SCM_Doer_Progress.D5_Status=0 then '批次完工'
+	when SCM_Doer_Progress.D5_Status is null then '未完工'
+	else '~' end as 是否完工,
+		
+case  when SCM_Doer_Progress.D4_Status=0 then '不足裁剪'
+	when SCM_Doer_Progress.D4_Status=1 then '足额裁剪'
+	else '~' end as 裁剪状态
+
+from m,SCM_Doer_Progress
+;
